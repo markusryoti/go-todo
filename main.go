@@ -37,14 +37,15 @@ func printOpts() {
 	fmt.Println("  1. Create new todo")
 	fmt.Println("  2. List todos")
 	fmt.Println("  3. Save todos")
-	fmt.Println("  4. Quit")
+	fmt.Println("  4. Load todos")
+	fmt.Println("  5. Quit")
 }
 
 func getSelection() (int, error) {
 	var option int
 	_, err := fmt.Scan(&option)
 
-	if err != nil || option > 4 {
+	if err != nil || option > 5 {
 		return -1, &OptionError{}
 	}
 
@@ -60,6 +61,8 @@ func handleSelection(selection int, todos *TodoContainer) {
 	case 3:
 		saveTodos(todos)
 	case 4:
+		readTodos(todos)
+	case 5:
 		os.Exit(0)
 	default:
 		break
@@ -117,7 +120,34 @@ func saveTodos(todos *TodoContainer) {
 		}
 	}
 
-	fmt.Println("Todos saved")
+	fmt.Println("\nTodos saved")
+}
+
+func readTodos(todos *TodoContainer) {
+	f, err := os.Open("todos.csv")
+
+	if err != nil {
+		fmt.Println("Couldn't open todo file")
+	}
+
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+
+	// Skip first row
+	scanner.Scan()
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Split(line, ",")
+		title, description := parts[0], parts[1]
+		todos.items = append(todos.items, createTodo(title, description))
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+	}
+
 }
 
 func loop() {
